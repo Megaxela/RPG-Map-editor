@@ -54,7 +54,7 @@ class Menu:
         self.menudict = menudict
         
         self.menu = []
-        self.size = (115,15)
+        self.size = (140,15)
         
         for name in self.menudict:
             #print name
@@ -386,11 +386,16 @@ class Cursor(pygame.sprite.Sprite):
         self.screen = screen
         self.selected = False
         self.collidable = False
+        self.editable = False
         self.layer = 0
         self.rect = pygame.rect.Rect(self.pos[0],self.pos[1],2,2)
         self.add(self.groups['cursor'])
     def update(self):
         self.rect = pygame.rect.Rect(self.pos[0],self.pos[1],2,2)
+        if pygame.sprite.spritecollide(self,self.groups['drmitems'],False):
+            self.editable = False
+        else:
+            self.editable = True
     def render(self):
         #self.screen.blit(pygame.font.SysFont('Terminal',15).render('Layer:'+str(self.layer+1),True,(150,0,255)),(data.screensize[0]-80,data.screensize[1]-10))
         self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Layer:'+str(self.layer+1),True,(255,255,255)),(self.pos[0]+2,self.pos[1]+35))
@@ -445,6 +450,7 @@ class Map:
         self.drawcollide = True
         self.pos = [96,19]
         self.size = size
+        self.layershow = [True,True,True]
         self.tileset = TileSet(data.tileset)
         self.mapsurface = pygame.surface.Surface((size[0]*32,size[1]*32))
         self.gridsurface = pygame.surface.Surface((size[0]*32,size[1]*32))
@@ -483,7 +489,7 @@ class Map:
                     self.map[map][iy].append((-1,-1))
         self.genSurface()
     def save(self,filename):
-        fl = open('saves/'+filename,'wb')
+        fl = open(filename,'w')
         pickle.dump(self.map,fl,-1)
         pickle.dump(self.collidelist,fl,-1)
         fl.close()
@@ -493,6 +499,8 @@ class Map:
         self.collidelist = pickle.load(fl)
         self.size = (len(self.map[0][0]),len(self.map[0]))
         
+        fl.close()
+        
         self.mapsurface = pygame.surface.Surface((self.size[0]*32,self.size[1]*32))
         self.gridsurface = pygame.surface.Surface((self.size[0]*32,self.size[1]*32))
         
@@ -500,18 +508,17 @@ class Map:
             pygame.draw.aaline(self.gridsurface, (180,180,180), (0,iy*32),(self.size[0]*32,iy*32))
         for ix in range(0,self.size[0]):
             pygame.draw.aaline(self.gridsurface, (180,180,180), (ix*32,0),(ix*32,self.size[1]*32))
-        
-        fl.close()
         self.genSurface()
     def setMap(self,coords,layer,set):
         self.map[layer][coords[1]][coords[0]] = set
     def genSurface(self):
         self.mapsurface.blit(self.gridsurface,(0,0))
         for map in range(0,len(self.map)):
-            for iy in range(0,len(self.map[map])):
-                for ix in range(0,len(self.map[map][iy])):
-                    if self.map[map][iy][ix] != (-1,-1):
-                        self.mapsurface.blit(self.tileset.GetTile((self.map[map][iy][ix])),(ix*32,iy*32))
+            if self.layershow[map]:
+                for iy in range(0,len(self.map[map])):
+                    for ix in range(0,len(self.map[map][iy])):
+                        if self.map[map][iy][ix] != (-1,-1):
+                            self.mapsurface.blit(self.tileset.GetTile((self.map[map][iy][ix])),(ix*32,iy*32))
         if self.drawcollide:
             for collide in self.collidelist:
                 pygame.draw.rect(self.mapsurface,(150,0,5),(collide[0]*32,collide[1]*32,32,32),3)
@@ -575,7 +582,10 @@ class Scene:
                                                              'Load (ctrl+l)',
                                                              'Exit']),
                                                   ('View',  ['View collide  (tab)',
-                                                             'Go to tile',]),
+                                                             'Go to tile',
+                                                             'Show/Unshow layer 1',
+                                                             'Show/Unshow layer 2',
+                                                             'Show/Unshow layer 3',]),
                                                   ('Editor',['Draw 1 layer (1)',
                                                              'Draw 2 layer (2)',
                                                              'Draw 3 layer (3)',
@@ -608,6 +618,21 @@ class Scene:
         if self.menu.menu[1].dep[1].opened:
             self.menu.menu[1].dep[1].opened = False
             self.map.pos = [0-int(TextField('Enter X pos',self.screen).result)*32+96,0-int(TextField('Enter Y pos',self.screen).result)*32+19]
+            
+        if self.menu.menu[1].dep[2].opened:
+            self.menu.menu[1].dep[2].opened = False
+            self.map.layershow[0] = not self.map.layershow[0]
+            self.map.genSurface()
+            
+        if self.menu.menu[1].dep[3].opened:
+            self.menu.menu[1].dep[3].opened = False
+            self.map.layershow[1] = not self.map.layershow[1]
+            self.map.genSurface()
+            
+        if self.menu.menu[1].dep[4].opened:
+            self.menu.menu[1].dep[4].opened = False
+            self.map.layershow[2] = not self.map.layershow[2]
+            self.map.genSurface()
             
         if self.menu.menu[0].dep[0].opened:
             self.menu.menu[0].dep[0].opened = False
@@ -706,7 +731,7 @@ class Scene:
         self.menu.update()
         self.cursor.update()
     def editor(self,event):
-        if self.cursor.pos[0] > 96 and self.cursor.selected and self.cursor.pos[1] > 19:
+        if self.cursor.pos[0] > 96 and self.cursor.selected and self.cursor.pos[1] > 19 and self.cursor.editable:
             factpos = [self.cursor.pos[0]-self.map.pos[0],self.cursor.pos[1]-self.map.pos[1]]
             tilecoords = [int(float(factpos[0])/32.0),int(float(factpos[1])/32.0)]
             if tilecoords[0] < self.map.size[0] and tilecoords[1] < self.map.size[1] and tilecoords[0] > -1 and tilecoords[1] > -1:
@@ -716,7 +741,7 @@ class Scene:
                         self.map.collidelist.append(tilecoords)
                 self.map.genSurface()
     def delete(self,event):
-        if self.cursor.pos[0] > 96 and self.cursor.selected and self.cursor.pos[1] > 19:
+        if self.cursor.pos[0] > 96 and self.cursor.selected and self.cursor.pos[1] > 19 and self.cursor.editable:
             factpos = [self.cursor.pos[0]-self.map.pos[0],self.cursor.pos[1]-self.map.pos[1]]
             tilecoords = [int(float(factpos[0])/32.0),int(float(factpos[1])/32.0)]
             if tilecoords[0] < self.map.size[0] and tilecoords[1] < self.map.size[1] and tilecoords[0] > -1 and tilecoords[1] > -1:
