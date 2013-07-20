@@ -75,7 +75,6 @@ class TextField:
         self.title = title
         self.screen = screen
         self.result = ''
-        self.curspos = -1
         self.showcurs = True
         self.showpick = 50
         self.showmom = 0
@@ -359,10 +358,16 @@ class TextField:
         pygame.draw.rect(self.screen, (0,0,0),(10,10,data.screensize[0]-20,50),2)
         pygame.draw.rect(self.screen, (10,10,10),(10,70,data.screensize[0]-20,50))
         self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.title,True,(255,255,255)),(17,17))
-        self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.result[0:self.curspos]+'|'+self.result[len(self.result)-self.curspos:len(self.result)+2],True,(255,255,255)),(17,77))
+        if self.showcurs:
+            self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.result+'|',True,(255,255,255)),(17,77))
+        else:
+            self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.result,True,(255,255,255)),(17,77))
         pygame.display.flip()
     def update(self):
-        pass
+        self.showmom+=1
+        if self.showmom >= self.showpick:
+            self.showcurs = not self.showcurs
+            self.showmom = 0
         
     def loop(self):
         self.clock = pygame.time.Clock()
@@ -490,7 +495,10 @@ class Map:
         pickle.dump(self.collidelist,fl,-1)
         fl.close()
     def load(self,filename):
-        fl = open(filename,'rb')
+        try:
+            fl = open(filename,'rb')
+        except IOError:
+            return False
         self.map = pickle.load(fl)
         self.collidelist = pickle.load(fl)
         self.size = (len(self.map[0][0]),len(self.map[0]))
@@ -505,6 +513,8 @@ class Map:
         for ix in range(0,self.size[0]):
             pygame.draw.aaline(self.gridsurface, (180,180,180), (ix*32,0),(ix*32,self.size[1]*32))
         self.genSurface()
+        
+        return True
     def setMap(self,coords,layer,set):
         self.map[layer][coords[1]][coords[0]] = set
     def genSurface(self):
@@ -545,11 +555,21 @@ class TileMenu:
             tile.render((pos[0],pos[1]+self.scroll))
 
 class Scene:
+    def loadTiles(self,filename):
+        try:
+            self.tileset = pygame.image.load(filename)
+        except pygame.error:
+            return False
+        return True
+            
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode(data.screensize)
         pygame.display.set_caption(data.title)
-        data.tileset = pygame.image.load(TextField('Enter tileset filename',self.screen).result)
+        loading = True
+        while loading:
+            if self.loadTiles(TextField('Enter tileset filename',self.screen).result):
+                loading = False
         self.keys = {# Mouse
                      'middle'   :   False,
                      # Keyboard
@@ -648,16 +668,18 @@ class Scene:
         
         if self.menu.menu[0].dep[2].opened:
             self.menu.menu[0].dep[2].opened = False
-            filename = TextField('LOAD Enter filename',self.screen).result
-            isd = False
-            for letter in filename:
-                if letter == '.':
-                    isd = True
-                    break
-            if not isd:
-                filename+='.mp'
-            self.map.load(filename)
-            
+            loading = True
+            while loading:
+                filename = TextField('LOAD Enter filename',self.screen).result
+                isd = False
+                for letter in filename:
+                    if letter == '.':
+                        isd = True
+                        break
+                if not isd:
+                    filename+='.mp'
+                if self.map.load(filename):
+                    loading = False
         if self.menu.menu[0].dep[3].opened:
             self.menu.menu[0].dep[3].opened = False
             pygame.quit()
@@ -692,14 +714,18 @@ class Scene:
             self.keys['s'] = False
             self.keys['ctrl'] = False
         if self.keys['l'] and self.keys['ctrl']:
-            filename = TextField('LOAD Enter filename',self.screen).result
-            isd = False
-            for letter in filename:
-                if letter == '.':
-                    isd = True
-                    break
-            if not isd:
-                filename+='.mp'
+            loading = True
+            while loading:
+                filename = TextField('LOAD Enter filename',self.screen).result
+                isd = False
+                for letter in filename:
+                    if letter == '.':
+                        isd = True
+                        break
+                if not isd:
+                    filename+='.mp'
+                if self.map.load(filename):
+                    loading = False
             self.map.load(filename)
             self.keys['l'] = False
             self.keys['ctrl'] = False
