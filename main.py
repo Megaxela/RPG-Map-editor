@@ -75,6 +75,7 @@ class TextField:
         self.title = title
         self.screen = screen
         self.result = ''
+        self.curspos = -1
         self.showcurs = True
         self.showpick = 50
         self.showmom = 0
@@ -329,6 +330,7 @@ class TextField:
             self.result+='9'
         if key == pygame.K_BACKSPACE:
             self.result = self.result[0:-1]
+
     def handleKeyboard(self,event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LCTRL:
@@ -357,16 +359,10 @@ class TextField:
         pygame.draw.rect(self.screen, (0,0,0),(10,10,data.screensize[0]-20,50),2)
         pygame.draw.rect(self.screen, (10,10,10),(10,70,data.screensize[0]-20,50))
         self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.title,True,(255,255,255)),(17,17))
-        if self.showcurs:
-            self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.result+'|',True,(255,255,255)),(17,77))
-        else:
-            self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.result,True,(255,255,255)),(17,77))
+        self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.result[0:self.curspos]+'|'+self.result[len(self.result)-self.curspos:len(self.result)+2],True,(255,255,255)),(17,77))
         pygame.display.flip()
     def update(self):
-        self.showmom+=1
-        if self.showmom >= self.showpick:
-            self.showcurs = not self.showcurs
-            self.showmom = 0
+        pass
         
     def loop(self):
         self.clock = pygame.time.Clock()
@@ -489,12 +485,12 @@ class Map:
                     self.map[map][iy].append((-1,-1))
         self.genSurface()
     def save(self,filename):
-        fl = open(filename,'w')
+        fl = open(filename,'wb')
         pickle.dump(self.map,fl,-1)
         pickle.dump(self.collidelist,fl,-1)
         fl.close()
     def load(self,filename):
-        fl = open(filename,'r')
+        fl = open(filename,'rb')
         self.map = pickle.load(fl)
         self.collidelist = pickle.load(fl)
         self.size = (len(self.map[0][0]),len(self.map[0]))
