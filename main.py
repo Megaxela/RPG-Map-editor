@@ -385,7 +385,9 @@ class Cursor(pygame.sprite.Sprite):
         self.lastpos = [0,0]
         self.groups = groups
         self.screen = screen
-        self.brush = 1
+        self.start = None
+        self.finish = None
+        self.brush = 0
         self.selected = False
         self.collidable = False
         self.editable = False
@@ -413,6 +415,8 @@ class Cursor(pygame.sprite.Sprite):
             self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Brush: Fill',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
         if self.brush == 2:
             self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Brush: Substitute',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
+        if self.brush == 3:
+            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Brush: Rectangle',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
             
     def LeftClick(self):
         if self.pos[1] > 19:
@@ -454,12 +458,13 @@ class TileSet:
 class Map:
     def __init__(self,screen,size):
         self.screen = screen
-        self.map = [[],[],[]]
+        self.map = [[],[],[],[],[]]
         self.collidelist = []
         self.drawcollide = True
         self.pos = [96,19]
         self.size = size
-        self.layershow = [True,True,True,True]
+        self.drawupgrid = False
+        self.layershow = [True,True,True,True,True]
         self.tileset = TileSet(data.tileset)
         self.mapsurface = pygame.surface.Surface((size[0]*32,size[1]*32))
         self.gridsurface = pygame.surface.Surface((size[0]*32,size[1]*32))
@@ -548,6 +553,11 @@ class Map:
                     for ix in range(0,len(self.map[map][iy])):
                         if self.map[map][iy][ix] != (-1,-1):
                             self.mapsurface.blit(self.tileset.GetTile((self.map[map][iy][ix])),(ix*32,iy*32))
+        if self.drawupgrid:
+            for iy in range(0,self.size[1]):
+                pygame.draw.aaline(self.mapsurface, (180,180,180), (0,iy*32),(self.size[0]*32,iy*32))
+            for ix in range(0,self.size[0]):
+                pygame.draw.aaline(self.mapsurface, (180,180,180), (ix*32,0),(ix*32,self.size[1]*32))
         if self.drawcollide:
             for collide in self.collidelist:
                 pygame.draw.rect(self.mapsurface,(150,0,5),(collide[0]*32,collide[1]*32,32,32),3)
@@ -625,15 +635,19 @@ class Scene:
                                                              'Show/Unshow layer 1',
                                                              'Show/Unshow layer 2',
                                                              'Show/Unshow layer 3',
-                                                             'Show/Unshow layer 4',]),
+                                                             'Show/Unshow layer 4',
+                                                             'Show/Unshow layer 5',
+                                                             'Show/Unshow grid']),
                                                   ('Editor',['Draw 1 layer (1)',
                                                              'Draw 2 layer (2)',
                                                              'Draw 3 layer (3)',
                                                              'Draw 4 layer (4)',
+                                                             'Draw 5 layer (5)',
                                                              'Draw collide (c)']),
                                                   ('Brush', ['Normal',
                                                              'Fill',
-                                                             'Substitute'])))
+                                                             'Substitute',
+                                                             'Rectangle'])))
         
         self.gameloop()
     def GUI(self):
@@ -717,6 +731,16 @@ class Scene:
             self.menu.menu[1].dep[5].opened = False
             self.map.layershow[3] = not self.map.layershow[3]
             self.map.genSurface()
+            
+        if self.menu.menu[1].dep[6].opened:
+            self.menu.menu[1].dep[6].opened = False
+            self.map.layershow[4] = not self.map.layershow[4]
+            self.map.genSurface()
+            
+        if self.menu.menu[1].dep[7].opened:
+            self.menu.menu[1].dep[7].opened = False
+            self.map.drawupgrid = not self.map.drawupgrid
+            self.map.genSurface()
         
         if self.menu.menu[2].dep[0].opened:
             self.menu.menu[2].dep[0].opened = False
@@ -729,9 +753,17 @@ class Scene:
         if self.menu.menu[2].dep[2].opened:
             self.menu.menu[2].dep[2].opened = False
             self.cursor.layer = 2
-            
+        
         if self.menu.menu[2].dep[3].opened:
             self.menu.menu[2].dep[3].opened = False
+            self.cursor.layer = 3
+            
+        if self.menu.menu[2].dep[4].opened:
+            self.menu.menu[2].dep[4].opened = False
+            self.cursor.layer = 4
+            
+        if self.menu.menu[2].dep[5].opened:
+            self.menu.menu[2].dep[5].opened = False
             self.cursor.collidable = not self.cursor.collidable
 
         if self.menu.menu[3].dep[0].opened:
@@ -745,6 +777,10 @@ class Scene:
         if self.menu.menu[3].dep[2].opened:
             self.menu.menu[3].dep[2].opened = False
             self.cursor.brush = 2
+        
+        if self.menu.menu[3].dep[3].opened:
+            self.menu.menu[3].dep[3].opened = False
+            self.cursor.brush = 3
         #Stop
         if self.keys['s'] and self.keys['ctrl']:
             filename = TextField('SAVE Enter filename',self.screen).result
@@ -774,22 +810,22 @@ class Scene:
             self.map.load(filename)
             self.keys['l'] = False
             self.keys['ctrl'] = False
-        if self.keys['UP']:
+        if self.keys['DOWN']:
             if self.keys['lshift'] or self.keys['rshift']:
                 self.map.pos[1]-=5
             else:
                 self.map.pos[1]-=2
-        if self.keys['LEFT']:
+        if self.keys['RIGHT']:
             if self.keys['lshift'] or self.keys['rshift']:
                 self.map.pos[0]-=5
             else:
                 self.map.pos[0]-=2
-        if self.keys['DOWN']:
+        if self.keys['UP']:
             if self.keys['lshift'] or self.keys['rshift']:
                 self.map.pos[1]+=5
             else:
                 self.map.pos[1]+=2
-        if self.keys['RIGHT']:
+        if self.keys['LEFT']:
             if self.keys['lshift'] or self.keys['rshift']:
                 self.map.pos[0]+=5
             else:
@@ -818,6 +854,20 @@ class Scene:
                 tilecoords = [int(float(factpos[0])/32.0),int(float(factpos[1])/32.0)]
                 self.map.subs(self.cursor.layer, tilecoords, self.cursor.selected.coords)
                 self.map.genSurface()
+            if self.cursor.brush == 3:
+                factpos = [self.cursor.pos[0]-self.map.pos[0],self.cursor.pos[1]-self.map.pos[1]]
+                tilecoords = [int(float(factpos[0])/32.0),int(float(factpos[1])/32.0)]
+                if not self.cursor.start:
+                    self.cursor.start = tilecoords
+                else:
+                    self.cursor.finish = (tilecoords[0]+1,tilecoords[1]+1)
+                    for iy in range(self.cursor.start[1],self.cursor.finish[1]):
+                        for ix in range(self.cursor.start[0],self.cursor.finish[0]):
+                            print self.cursor.start,self.cursor.finish,(ix,iy)
+                            self.map.map[self.cursor.layer][iy][ix] = self.cursor.selected.coords
+                    self.cursor.start = None
+                    self.cursor.finish = None
+                    self.map.genSurface()
     def delete(self,event):
         if self.cursor.pos[0] > 96 and self.cursor.selected and self.cursor.pos[1] > 19 and self.cursor.editable:
             if self.cursor.brush == 0:
@@ -873,6 +923,8 @@ class Scene:
                 self.cursor.layer = 2
             if event.key == pygame.K_4:
                 self.cursor.layer = 3
+            if event.key == pygame.K_5:
+                self.cursor.layer = 4
             if event.key == pygame.K_c:
                 self.cursor.collidable = not self.cursor.collidable
             if event.key == pygame.K_TAB:
