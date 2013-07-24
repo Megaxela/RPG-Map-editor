@@ -3,6 +3,7 @@ import sys
 import data
 import pickle
 import Tkinter
+from random import randint
 
 def getTile(image,coords):
     tilesize = (32,32)
@@ -40,14 +41,14 @@ class DropMenu(pygame.sprite.Sprite):
     def render(self):
         if not self.owner:
             pygame.draw.rect(self.screen, (60,60,60), self.rect)
-            self.screen.blit(pygame.font.Font('vgasysr.fon',19).render(self.name,True,(255,255,255)),(self.pos[0]+1,self.pos[1]))
+            self.screen.blit(data.textfont.render(self.name,True,(255,255,255)),(self.pos[0]+1,self.pos[1]))
             if self.opened:
                 if self.dep != []:
                     for dep in self.dep:
                         pygame.draw.rect(self.screen, (30,30,30),(dep.pos[0]-1,dep.pos[1]-1,dep.size[0]+2,dep.size[1]+2))
                         pygame.draw.rect(self.screen, (60,60,60),dep.rect)
                         #pygame.draw.rect(self.screen, (60,60,60),(dep.pos[0],dep.pos[1],dep.size[0],dep.size[1])
-                        self.screen.blit(pygame.font.Font('vgasysr.fon',19).render(dep.name,True,(255,255,255)),(dep.pos[0]+1,dep.pos[1]))
+                        self.screen.blit(data.textfont.render(dep.name,True,(255,255,255)),(dep.pos[0]+1,dep.pos[1]))
 class Menu:
     def __init__(self,screen,groups,menudict):
         self.screen = screen
@@ -377,11 +378,11 @@ class TextField:
         pygame.draw.rect(self.screen, (50,0,0),(10,10,data.screensize[0]-20,50))
         pygame.draw.rect(self.screen, (0,0,0),(10,10,data.screensize[0]-20,50),2)
         pygame.draw.rect(self.screen, (10,10,10),(10,70,data.screensize[0]-20,50))
-        self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.title,True,(255,255,255)),(17,17))
+        self.screen.blit(data.edittext.render(self.title,True,(255,255,255)),(17,17))
         if self.showcurs:
-            self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.result+'|',True,(255,255,255)),(17,77))
+            self.screen.blit(data.edittext.render(self.result+'|',True,(255,255,255)),(17,77))
         else:
-            self.screen.blit(pygame.font.Font('BRLNSDB.TTF',30).render(self.result,True,(255,255,255)),(17,77))
+            self.screen.blit(data.edittext.render(self.result,True,(255,255,255)),(17,77))
         pygame.display.flip()
     def update(self):
         if (self.keys['LALT'] and self.keys['ENTER']) or (self.keys['RALT'] and self.keys['ENTER']):
@@ -417,6 +418,7 @@ class Cursor(pygame.sprite.Sprite):
         self.screen = screen
         self.start = None
         self.finish = None
+        self.chance = None
         self.brush = 0
         self.selected = False
         self.collidable = False
@@ -432,29 +434,33 @@ class Cursor(pygame.sprite.Sprite):
             self.editable = True
     def render(self):
         #self.screen.blit(pygame.font.SysFont('Terminal',15).render('Layer:'+str(self.layer+1),True,(150,0,255)),(data.screensize[0]-80,data.screensize[1]-10))
-        self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Layer:'+str(self.layer+1),True,(255,255,255)),(self.pos[0]+2,self.pos[1]+35))
+        self.screen.blit(data.cursorfont.render('Layer:'+str(self.layer+1),True,(255,255,255)),(self.pos[0]+2,self.pos[1]+35))
         if self.selected:
             self.screen.blit(self.selected.image,(self.pos[0]+2,self.pos[1]+2))
         if self.collidable:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Collidable',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+50))
+            self.screen.blit(data.cursorfont.render('Collidable',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+50))
         else:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('UnCollidable',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+50))
+            self.screen.blit(data.cursorfont.render('UnCollidable',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+50))
         if self.brush == 0:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Brush: normal',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
+            self.screen.blit(data.cursorfont.render('Brush: normal',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
         if self.brush == 1:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Brush: Fill',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
+            self.screen.blit(data.cursorfont.render('Brush: Fill',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
         if self.brush == 2:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Brush: Substitute',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
+            self.screen.blit(data.cursorfont.render('Brush: Substitute',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
         if self.brush == 3:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Brush: Rectangle',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
+            self.screen.blit(data.cursorfont.render('Brush: Rectangle',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
+        if self.brush == 4:
+            self.screen.blit(data.cursorfont.render('Brush: Noise fill',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
+        if self.brush == 5:
+            self.screen.blit(data.cursorfont.render('Brush: Take tile from map',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+65))
         if self.type == 0:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Type: Tiles',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+80))
+            self.screen.blit(data.cursorfont.render('Type: Tiles',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+80))
         if self.type == 1:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Type: Player',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+80))
+            self.screen.blit(data.cursorfont.render('Type: Player',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+80))
         if self.type == 2:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Type: Mobs',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+80))
+            self.screen.blit(data.cursorfont.render('Type: Mobs',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+80))
         if self.type == 3:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Type: Exits',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+80))
+            self.screen.blit(data.cursorfont.render('Type: Exits',True,(255,255,255)),(self.pos[0]+2,self.pos[1]+80))
             
     def LeftClick(self):
         if self.pos[1] > 19:
@@ -502,6 +508,7 @@ class Map:
         self.mobsspawn = []
         self.playerspawn = [0,0]
         self.ways = []
+        self.ways = [[],[],[],[],[]]
         
         self.drawcollide = True
         self.pos = [96,19]
@@ -539,6 +546,11 @@ class Map:
                 for ix in range(0,len(self.map[layer][iy])):
                     if self.map[layer][iy][ix] == changable:
                         self.map[layer][iy][ix] = target
+    def noisefill(self,layer,target,chance):
+        for iy in range(0,len(self.map[layer])):
+            for ix in range(0,len(self.map[layer][iy])):
+                if randint(0,100)<chance:
+                    self.map[layer][iy][ix] = target
     def new(self,screen,size):
         self.screen = screen
         self.map = [[],[],[],[]]
@@ -579,6 +591,8 @@ class Map:
         self.mobsspawn = pickle.load(fl)
         self.playerspawn = pickle.load(fl)
         self.ways = pickle.load(fl)
+        if len(self.ways) != 5:
+            self.ways = [[],[],[],[],[]]
         self.size = (len(self.map[0][0]),len(self.map[0]))
         
         fl.close()
@@ -607,8 +621,10 @@ class Map:
             self.mapsurface.blit(data.player,(self.playerspawn[0]*32,self.playerspawn[1]*32))
             for mob in self.mobsspawn:
                 self.mapsurface.blit(data.mobs,(mob[0]*32,mob[1]*32))
-            for way in self.ways:
-                self.mapsurface.blit(data.ways,(way[0]*32,way[1]*32))
+            for layer in range(0,len(self.ways)):
+                for way in self.ways[layer]:
+                    self.mapsurface.blit(data.ways,(way[0]*32,way[1]*32))
+                    self.mapsurface.blit(data.textfont.render(str(layer+1),True,(255,255,255)),(way[0]*32,way[1]*32))
             
         if self.layershow[-1]:
             for iy in range(0,len(self.map[-1])):
@@ -707,7 +723,8 @@ class Scene:
                                                                  'Show/Unshow layer 4',
                                                                  'Show/Unshow layer 5',
                                                                  'Show/Unshow grid',
-                                                                 'Show/Unshow triggers',]),
+                                                                 'Show/Unshow triggers',
+                                                                 'Toggle fullscreen']),
                                                   ('Editor',    ['Draw 1 layer (1)',
                                                                  'Draw 2 layer (2)',
                                                                  'Draw 3 layer (3)',
@@ -717,7 +734,9 @@ class Scene:
                                                   ('Brush',     ['Normal',
                                                                  'Fill',
                                                                  'Substitute',
-                                                                 'Rectangle']),
+                                                                 'Rectangle',
+                                                                 'Noise fill',
+                                                                 'Take tile']),
                                                   ('Brush type',['Tiles',
                                                                  'Player',
                                                                  'Mobs',
@@ -726,9 +745,9 @@ class Scene:
         self.gameloop()
     def GUI(self):
         if not self.map.drawcollide:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Collide area dont shown.', True, (255,255,255)),(data.screensize[0]-160,18))
+            self.screen.blit(data.cursorfont.render('Collide area dont shown.', True, (255,255,255)),(data.screensize[0]-160,18))
         else:
-            self.screen.blit(pygame.font.Font('vgasysr.fon',15).render('Collide area are shown.', True, (255,255,255)),(data.screensize[0]-160,18))
+            self.screen.blit(data.cursorfont.render('Collide area are shown.', True, (255,255,255)),(data.screensize[0]-160,18))
     def render(self):
         self.screen.fill((0,0,0))
         
@@ -814,6 +833,22 @@ class Scene:
             self.menu.menu[1].dep[7].opened = False
             self.map.drawupgrid = not self.map.drawupgrid
             self.map.genSurface()
+            
+        if self.menu.menu[1].dep[8].opened:
+            self.menu.menu[1].dep[8].opened = False
+            self.map.showSubTriggers = not self.map.showSubTriggers
+            self.map.genSurface()
+        
+        if self.menu.menu[1].dep[9].opened:
+            self.menu.menu[1].dep[9].opened = False
+            if data.fullscreen:
+                data.screensize = (800,600)
+                self.screen = pygame.display.set_mode(data.screensize,pygame.RESIZABLE)
+                data.fullscreen = False
+            else:
+                data.screensize = (Tkinter.Tk().winfo_screenwidth(),Tkinter.Tk().winfo_screenheight())
+                self.screen = pygame.display.set_mode(data.screensize,pygame.FULLSCREEN)
+                data.fullscreen = True
         
         if self.menu.menu[2].dep[0].opened:
             self.menu.menu[2].dep[0].opened = False
@@ -855,6 +890,15 @@ class Scene:
             self.menu.menu[3].dep[3].opened = False
             self.cursor.brush = 3
             
+        if self.menu.menu[3].dep[4].opened:
+            self.menu.menu[3].dep[4].opened = False
+            self.cursor.brush = 4
+            self.cursor.chance = int(TextField('Enter percentage', self.screen).result)
+            
+        if self.menu.menu[3].dep[5].opened:
+            self.menu.menu[3].dep[5].opened = False
+            self.cursor.brush = 5
+
         if self.menu.menu[4].dep[0].opened:
             self.menu.menu[4].dep[0].opened = False
             self.cursor.type = 0
@@ -968,6 +1012,16 @@ class Scene:
                         self.cursor.start = None
                         self.cursor.finish = None
                         self.map.genSurface()
+                if self.cursor.brush == 4:
+                    factpos = [self.cursor.pos[0]-self.map.pos[0],self.cursor.pos[1]-self.map.pos[1]]
+                    tilecoords = [int(float(factpos[0])/32.0),int(float(factpos[1])/32.0)]
+                    self.map.noisefill(self.cursor.layer, self.cursor.selected.coords, self.cursor.chance)
+                    self.map.genSurface()
+                if self.cursor.brush == 5:
+                    factpos = [self.cursor.pos[0]-self.map.pos[0],self.cursor.pos[1]-self.map.pos[1]]
+                    tilecoords = [int(float(factpos[0])/32.0),int(float(factpos[1])/32.0)]
+                    self.cursor.selected = Tile(self.screen, self.map.tileset.GetTile(self.map.map[self.cursor.layer][tilecoords[1]][tilecoords[0]]), self.map.map[self.cursor.layer][tilecoords[1]][tilecoords[0]], None, False)
+                    
             if self.cursor.type == 1:
                 factpos = [self.cursor.pos[0]-self.map.pos[0],self.cursor.pos[1]-self.map.pos[1]]
                 tilecoords = [int(float(factpos[0])/32.0),int(float(factpos[1])/32.0)]
@@ -982,8 +1036,8 @@ class Scene:
             if self.cursor.type == 3:
                 factpos = [self.cursor.pos[0]-self.map.pos[0],self.cursor.pos[1]-self.map.pos[1]]
                 tilecoords = [int(float(factpos[0])/32.0),int(float(factpos[1])/32.0)]
-                if not tilecoords in self.map.ways:
-                    self.map.ways.append(tilecoords)
+                if not tilecoords in self.map.ways[self.cursor.layer]:
+                    self.map.ways[self.cursor.layer].append(tilecoords)
                     self.map.genSurface()
                 
     def delete(self,event):
@@ -1031,14 +1085,14 @@ class Scene:
             if self.cursor.type == 3:
                 factpos = [self.cursor.pos[0]-self.map.pos[0],self.cursor.pos[1]-self.map.pos[1]]
                 tilecoords = [int(float(factpos[0])/32.0),int(float(factpos[1])/32.0)]
-                if tilecoords in self.map.ways:
+                if tilecoords in self.map.ways[self.cursor.layer]:
                     num = 0
-                    for waypos in self.map.ways:
+                    for waypos in self.map.ways[self.cursor.layer]:
                         if waypos == tilecoords:
                             break
                         else:
                             num+=1
-                    del(self.map.ways[num])
+                    del(self.map.ways[self.cursor.layer][num])
                     self.map.genSurface()
             
     def handleKeyboard(self,event):
