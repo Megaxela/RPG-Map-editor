@@ -799,6 +799,7 @@ class Scene:
         if self.menu.menu[1].dep[0].opened:
             self.menu.menu[1].dep[0].opened = False
             self.map.drawcollide = not self.map.drawcollide
+            self.map.genSurface()
         
         if self.menu.menu[1].dep[1].opened:
             self.menu.menu[1].dep[1].opened = False
